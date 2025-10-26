@@ -1,4 +1,9 @@
 import { defineStore } from 'pinia'
+import {
+  mapProperty,
+  mapProperties,
+  PROPERTY_IMAGE_PLACEHOLDER
+} from '~/lib/property-utils'
 
 export const usePropertyStore = defineStore('properties', {
   state: () => ({
@@ -78,23 +83,46 @@ export const usePropertyStore = defineStore('properties', {
   },
 
   actions: {
-    async fetchProperties() {
+    async fetchProperties(force = false) {
+      if (!force && this.properties.length) {
+        return this.properties
+      }
+
       try {
-        const { data } = await $fetch('/api/properties')
-        this.properties = data
+        const response = await $fetch('/api/properties')
+        const mapped = mapProperties(response?.data || [])
+        this.properties = mapped
+        return mapped
       } catch (error) {
         console.error('Erro ao buscar propriedades:', error)
+        throw error
       }
     },
 
     async addProperty(property) {
       try {
-        const { data } = await $fetch('/api/properties', {
+        const response = await $fetch('/api/properties', {
           method: 'POST',
           body: property
         })
-        this.properties.unshift(data)
-        return data
+
+        const createdId = response?.data?.id
+
+        if (!createdId) {
+          throw new Error('Resposta da API nao retornou o ID da propriedade criada.')
+        }
+
+        const created = await this.fetchPropertyById(createdId, true)
+        const index = this.properties.findIndex((item) => item.id === created.id)
+
+        if (index > -1) {
+          const [item] = this.properties.splice(index, 1)
+          this.properties.unshift(item)
+        } else {
+          this.properties.unshift(created)
+        }
+
+        return created
       } catch (error) {
         console.error('Erro ao criar propriedade:', error)
         throw error
@@ -103,15 +131,13 @@ export const usePropertyStore = defineStore('properties', {
 
     async updateProperty(id, updates) {
       try {
-        const { data } = await $fetch(`/api/properties/${id}`, {
+        await $fetch(`/api/properties/${id}`, {
           method: 'PUT',
           body: updates
         })
-        const index = this.properties.findIndex(p => p.id === id)
-        if (index > -1) {
-          this.properties[index] = data
-        }
-        return data
+
+        const updated = await this.fetchPropertyById(id, true)
+        return updated
       } catch (error) {
         console.error('Erro ao atualizar propriedade:', error)
         throw error
@@ -129,6 +155,46 @@ export const usePropertyStore = defineStore('properties', {
         }
       } catch (error) {
         console.error('Erro ao deletar propriedade:', error)
+        throw error
+      }
+    },
+
+    async fetchPropertyById(id, force = false) {
+      const numericId = parseInt(id)
+
+      if (Number.isNaN(numericId)) {
+        throw new Error('ID de propriedade invalido.')
+      }
+
+      const existing = this.properties.find((property) => property.id === numericId)
+
+      if (existing && !force) {
+        return existing
+      }
+
+      try {
+        const response = await $fetch(`/api/properties/${numericId}`)
+        const mapped = mapProperty(response?.data)
+
+        if (!mapped) {
+          throw new Error('Propriedade nao encontrada.')
+        }
+
+        if (!mapped.image) {
+          mapped.image = PROPERTY_IMAGE_PLACEHOLDER
+        }
+
+        const index = this.properties.findIndex((property) => property.id === mapped.id)
+
+        if (index > -1) {
+          this.properties.splice(index, 1, mapped)
+        } else {
+          this.properties.push(mapped)
+        }
+
+        return mapped
+      } catch (error) {
+        console.error('Erro ao buscar propriedade:', error)
         throw error
       }
     },

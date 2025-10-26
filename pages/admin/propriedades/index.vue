@@ -23,10 +23,12 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
           <select v-model="filters.type" class="input-field">
             <option value="">Todos</option>
-            <option value="casa">Casa</option>
-            <option value="apartamento">Apartamento</option>
-            <option value="terreno">Terreno</option>
-            <option value="comercial">Comercial</option>
+            <option value="CASA">Casa</option>
+            <option value="APARTAMENTO">Apartamento</option>
+            <option value="COBERTURA">Cobertura</option>
+            <option value="TERRENO">Terreno</option>
+            <option value="COMERCIAL">Comercial</option>
+            <option value="RURAL">Rural</option>
           </select>
         </div>
         
@@ -34,19 +36,19 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
           <select v-model="filters.status" class="input-field">
             <option value="">Todos</option>
-            <option value="disponivel">Disponível</option>
-            <option value="vendido">Vendido</option>
-            <option value="locado">Locado</option>
-            <option value="rascunho">Rascunho</option>
+            <option value="AVAILABLE">Disponivel</option>
+            <option value="SOLD">Vendido</option>
+            <option value="RENTED">Locado</option>
+            <option value="DRAFT">Rascunho</option>
           </select>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Localização</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Localizacao</label>
           <input 
             v-model="filters.location" 
             type="text" 
-            placeholder="Buscar por localização"
+            placeholder="Buscar por localizacao"
             class="input-field"
           >
         </div>
@@ -60,8 +62,19 @@
     </div>
 
     <!-- Properties Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-      <div class="overflow-x-auto">
+    <div v-if="isLoading" class="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
+      Carregando propriedades...
+    </div>
+
+    <div v-else-if="loadError" class="bg-white rounded-lg shadow-md p-12 text-center">
+      <p class="text-gray-700">{{ loadError }}</p>
+      <button @click="reloadProperties" class="btn-primary mt-4">
+        Tentar novamente
+      </button>
+    </div>
+
+    <div v-else class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div v-if="filteredProperties.length" class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -72,7 +85,7 @@
                 Tipo
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Preço
+                Preco
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -81,15 +94,15 @@
                 Data
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
+                Acoes
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="property in filteredProperties" :key="property.id" class="hover:bg-gray-50">
+            <tr v-for="property in paginatedProperties" :key="property.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
-                  <img :src="property.image" :alt="property.title" class="w-12 h-12 object-cover rounded-lg mr-4">
+                  <img :src="getPropertyImage(property)" :alt="property.title" class="w-12 h-12 object-cover rounded-lg mr-4">
                   <div>
                     <div class="text-sm font-medium text-gray-900">{{ property.title }}</div>
                     <div class="text-sm text-gray-500">{{ property.location }}</div>
@@ -98,14 +111,14 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                  {{ property.type }}
+                  {{ formatType(property.type) }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ formatCurrency(property.price) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="getStatusClass(property.status)" class="px-2 py-1 text-xs font-medium rounded-full">
+                <span :class="['px-2 py-1 text-xs font-medium rounded-full', getStatusClass(property.status)]">
                   {{ getStatusText(property.status) }}
                 </span>
               </td>
@@ -138,7 +151,7 @@
       </div>
 
       <!-- Empty State -->
-      <div v-if="filteredProperties.length === 0" class="text-center py-12">
+      <div v-else class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
@@ -153,7 +166,7 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+    <div v-if="!isLoading && !loadError && filteredProperties.length && totalPages > 1" class="mt-6 flex justify-center">
       <nav class="flex items-center space-x-2">
         <button 
           @click="currentPage = Math.max(1, currentPage - 1)"
@@ -182,7 +195,7 @@
           :disabled="currentPage === totalPages"
           class="px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
         >
-          Próximo
+          Proximo
         </button>
       </nav>
     </div>
@@ -190,65 +203,20 @@
 </template>
 
 <script setup>
+import { storeToRefs } from 'pinia'
+import { usePropertyStore } from '~/stores/properties'
+
 definePageMeta({
   layout: 'admin'
 })
 
-// Dados mockados para demonstração
-const allProperties = ref([
-  {
-    id: 1,
-    title: 'Casa Moderna com Piscina',
-    location: 'Vila Madalena, São Paulo',
-    price: 850000,
-    type: 'casa',
-    status: 'disponivel',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=100',
-    createdAt: '2024-01-15'
-  },
-  {
-    id: 2,
-    title: 'Apartamento Luxo Centro',
-    location: 'Centro, São Paulo',
-    price: 1200000,
-    type: 'apartamento',
-    status: 'vendido',
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=100',
-    createdAt: '2024-01-14'
-  },
-  {
-    id: 3,
-    title: 'Cobertura com Vista Mar',
-    location: 'Santos, São Paulo',
-    price: 2500000,
-    type: 'cobertura',
-    status: 'disponivel',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=100',
-    createdAt: '2024-01-13'
-  },
-  {
-    id: 4,
-    title: 'Casa Familiar Jardim',
-    location: 'Jardins, São Paulo',
-    price: 650000,
-    type: 'casa',
-    status: 'locado',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=100',
-    createdAt: '2024-01-12'
-  },
-  {
-    id: 5,
-    title: 'Apartamento Compacto',
-    location: 'Mooca, São Paulo',
-    price: 450000,
-    type: 'apartamento',
-    status: 'disponivel',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=100',
-    createdAt: '2024-01-11'
-  }
-])
+const propertyStore = usePropertyStore()
+const { properties } = storeToRefs(propertyStore)
 
-const filters = ref({
+const isLoading = ref(true)
+const loadError = ref(null)
+
+const filters = reactive({
   type: '',
   status: '',
   location: ''
@@ -257,83 +225,147 @@ const filters = ref({
 const currentPage = ref(1)
 const itemsPerPage = 10
 
+const reloadProperties = async () => {
+  isLoading.value = true
+  loadError.value = null
+
+  try {
+    await propertyStore.fetchProperties()
+  } catch (error) {
+    console.error('Erro ao buscar propriedades:', error)
+    loadError.value = 'Nao foi possivel carregar as propriedades.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+await reloadProperties()
+
 const filteredProperties = computed(() => {
-  let filtered = [...allProperties.value]
+  let list = properties.value ?? []
 
-  if (filters.value.type) {
-    filtered = filtered.filter(p => p.type === filters.value.type)
+  if (filters.type) {
+    list = list.filter(property => property.type === filters.type)
   }
 
-  if (filters.value.status) {
-    filtered = filtered.filter(p => p.status === filters.value.status)
+  if (filters.status) {
+    list = list.filter(property => property.status === filters.status)
   }
 
-  if (filters.value.location) {
-    filtered = filtered.filter(p => 
-      p.location.toLowerCase().includes(filters.value.location.toLowerCase())
-    )
+  if (filters.location) {
+    const term = filters.location.toLowerCase()
+    list = list.filter(property => property.location?.toLowerCase().includes(term))
   }
 
-  return filtered
+  return list
 })
 
 const totalPages = computed(() => {
+  if (!filteredProperties.value.length) {
+    return 1
+  }
   return Math.ceil(filteredProperties.value.length / itemsPerPage)
+})
+
+const paginatedProperties = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredProperties.value.slice(start, start + itemsPerPage)
 })
 
 const visiblePages = computed(() => {
   const pages = []
+  const maxPages = totalPages.value
   const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, start + 4)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
+  const end = Math.min(maxPages, start + 4)
+
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page)
   }
-  
+
   return pages
 })
 
+watch(filteredProperties, (list) => {
+  const maxPage = list.length ? Math.ceil(list.length / itemsPerPage) : 1
+
+  if (currentPage.value > maxPage) {
+    currentPage.value = maxPage
+  }
+})
+
 const formatCurrency = (value) => {
+  if (value === null || value === undefined) {
+    return 'N/A'
+  }
+
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
   }).format(value)
 }
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('pt-BR')
+const formatDate = (value) => {
+  if (!value) {
+    return 'N/A'
+  }
+
+  return new Date(value).toLocaleDateString('pt-BR')
 }
 
-const getStatusClass = (status) => {
-  const classes = {
-    disponivel: 'bg-green-100 text-green-800',
-    vendido: 'bg-blue-100 text-blue-800',
-    locado: 'bg-yellow-100 text-yellow-800',
-    rascunho: 'bg-gray-100 text-gray-800'
-  }
-  return classes[status] || 'bg-gray-100 text-gray-800'
+const typeLabels = {
+  CASA: 'Casa',
+  APARTAMENTO: 'Apartamento',
+  COBERTURA: 'Cobertura',
+  TERRENO: 'Terreno',
+  COMERCIAL: 'Comercial',
+  RURAL: 'Rural'
 }
 
-const getStatusText = (status) => {
-  const texts = {
-    disponivel: 'Disponível',
-    vendido: 'Vendido',
-    locado: 'Locado',
-    rascunho: 'Rascunho'
+const statusLabels = {
+  AVAILABLE: 'Disponivel',
+  SOLD: 'Vendido',
+  RENTED: 'Locado',
+  DRAFT: 'Rascunho'
+}
+
+const statusClasses = {
+  AVAILABLE: 'bg-green-100 text-green-800',
+  SOLD: 'bg-blue-100 text-blue-800',
+  RENTED: 'bg-yellow-100 text-yellow-800',
+  DRAFT: 'bg-gray-100 text-gray-800'
+}
+
+const formatType = (type) => typeLabels[type] ?? type
+const getStatusText = (status) => statusLabels[status] ?? status
+const getStatusClass = (status) => statusClasses[status] ?? 'bg-gray-100 text-gray-800'
+
+const getPropertyImage = (property) => {
+  if (property?.images?.length) {
+    const mainImage = property.images.find(image => image.type === 'MAIN')
+    return (mainImage ?? property.images[0]).url
   }
-  return texts[status] || status
+
+  return 'https://placehold.co/80x80?text=Sem+foto'
 }
 
 const applyFilters = () => {
   currentPage.value = 1
 }
 
-const deleteProperty = (id) => {
-  if (confirm('Tem certeza que deseja excluir esta propriedade?')) {
-    const index = allProperties.value.findIndex(p => p.id === id)
-    if (index > -1) {
-      allProperties.value.splice(index, 1)
+const deleteProperty = async (id) => {
+  if (!confirm('Tem certeza que deseja excluir esta propriedade?')) {
+    return
+  }
+
+  try {
+    await propertyStore.deleteProperty(id)
+
+    if (filteredProperties.value.length <= (currentPage.value - 1) * itemsPerPage && currentPage.value > 1) {
+      currentPage.value -= 1
     }
+  } catch (error) {
+    console.error('Erro ao deletar propriedade:', error)
+    alert('Nao foi possivel excluir a propriedade. Tente novamente.')
   }
 }
 </script>

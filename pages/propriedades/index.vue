@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Propriedades Disponíveis</h1>
-        <p class="text-lg text-gray-600">Encontre o imóvel perfeito para você</p>
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Propriedades Disponiveis</h1>
+        <p class="text-lg text-gray-600">Encontre o imovel perfeito para voce</p>
       </div>
     </div>
 
@@ -17,22 +17,24 @@
             
             <!-- Property Type -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Imóvel</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Imovel</label>
               <select v-model="filters.type" class="input-field">
                 <option value="">Todos</option>
-                <option value="casa">Casa</option>
-                <option value="apartamento">Apartamento</option>
-                <option value="terreno">Terreno</option>
-                <option value="comercial">Comercial</option>
+                <option value="CASA">Casa</option>
+                <option value="APARTAMENTO">Apartamento</option>
+                <option value="COBERTURA">Cobertura</option>
+                <option value="TERRENO">Terreno</option>
+                <option value="COMERCIAL">Comercial</option>
+                <option value="RURAL">Rural</option>
               </select>
             </div>
 
             <!-- Price Range -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Faixa de Preço</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Faixa de Preco</label>
               <select v-model="filters.priceRange" class="input-field">
-                <option value="">Qualquer preço</option>
-                <option value="0-300000">Até R$ 300.000</option>
+                <option value="">Qualquer preco</option>
+                <option value="0-300000">Ate R$ 300.000</option>
                 <option value="300000-500000">R$ 300.000 - R$ 500.000</option>
                 <option value="500000-800000">R$ 500.000 - R$ 800.000</option>
                 <option value="800000-1200000">R$ 800.000 - R$ 1.200.000</option>
@@ -55,7 +57,7 @@
 
             <!-- Location -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Localização</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Localizacao</label>
               <input 
                 v-model="filters.location" 
                 type="text" 
@@ -85,10 +87,12 @@
         <!-- Properties Grid -->
         <div class="lg:w-3/4">
           <!-- Results Header -->
-          <div class="flex justify-between items-center mb-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <h2 class="text-xl font-semibold text-gray-900">
-                {{ filteredProperties.length }} propriedades encontradas
+                <span v-if="isLoading">Carregando propriedades...</span>
+                <span v-else-if="loadError">Erro ao carregar propriedades</span>
+                <span v-else>{{ filteredProperties.length }} propriedades encontradas</span>
               </h2>
               <p class="text-gray-600">Mostrando resultados para sua busca</p>
             </div>
@@ -96,57 +100,83 @@
             <!-- Sort -->
             <div class="flex items-center space-x-2">
               <label class="text-sm font-medium text-gray-700">Ordenar por:</label>
-              <select v-model="sortBy" class="input-field w-40">
-                <option value="price-asc">Menor preço</option>
-                <option value="price-desc">Maior preço</option>
-                <option value="area-desc">Maior área</option>
+              <select v-model="sortBy" class="input-field w-44">
                 <option value="newest">Mais recentes</option>
+                <option value="price-asc">Menor preco</option>
+                <option value="price-desc">Maior preco</option>
+                <option value="area-desc">Maior area</option>
               </select>
             </div>
           </div>
 
-          <!-- Properties Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <PropertyCard 
-              v-for="property in paginatedProperties" 
-              :key="property.id"
-              :property="property"
-            />
+          <div v-if="loadError" class="bg-white rounded-lg shadow-md p-8 text-center text-gray-600">
+            <p>{{ loadError }}</p>
+            <button class="btn-primary mt-4" @click="reload">Tentar novamente</button>
           </div>
 
-          <!-- Pagination -->
-          <div v-if="totalPages > 1" class="mt-12 flex justify-center">
-            <nav class="flex items-center space-x-2">
-              <button 
-                @click="currentPage = Math.max(1, currentPage - 1)"
-                :disabled="currentPage === 1"
-                class="px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
-              >
-                Anterior
-              </button>
-              
-              <button 
-                v-for="page in visiblePages" 
-                :key="page"
-                @click="currentPage = page"
-                :class="[
-                  'px-3 py-2 rounded-md text-sm font-medium',
-                  page === currentPage 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-500 hover:text-gray-700'
-                ]"
-              >
-                {{ page }}
-              </button>
-              
-              <button 
-                @click="currentPage = Math.min(totalPages, currentPage + 1)"
-                :disabled="currentPage === totalPages"
-                class="px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
-              >
-                Próximo
-              </button>
-            </nav>
+          <div v-else>
+            <!-- Properties Grid -->
+            <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div v-for="index in 6" :key="index" class="animate-pulse">
+                <div class="h-48 bg-gray-200 rounded-t-lg"></div>
+                <div class="bg-white rounded-b-lg p-4 space-y-3 shadow-sm">
+                  <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </div>
+            </div>
+
+            <div v-else-if="filteredProperties.length === 0" class="bg-white rounded-lg shadow-md p-12 text-center">
+              <h3 class="text-xl font-semibold text-gray-900 mb-2">Nenhuma propriedade encontrada</h3>
+              <p class="text-gray-600 mb-4">Tente ajustar os filtros ou limpar a busca.</p>
+              <button class="btn-primary" @click="clearFilters">Limpar filtros</button>
+            </div>
+
+            <div v-else class="space-y-10">
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <PropertyCard 
+                  v-for="property in paginatedProperties" 
+                  :key="property.id"
+                  :property="property"
+                />
+              </div>
+
+              <!-- Pagination -->
+              <div v-if="totalPages > 1" class="flex justify-center">
+                <nav class="flex items-center space-x-2">
+                  <button 
+                    @click="currentPage = Math.max(1, currentPage - 1)"
+                    :disabled="currentPage === 1"
+                    class="px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  
+                  <button 
+                    v-for="page in visiblePages" 
+                    :key="page"
+                    @click="currentPage = page"
+                    :class="[
+                      'px-3 py-2 rounded-md text-sm font-medium',
+                      page === currentPage 
+                        ? 'bg-blue-600 text-white' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    ]"
+                  >
+                    {{ page }}
+                  </button>
+                  
+                  <button 
+                    @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                    :disabled="currentPage === totalPages"
+                    class="px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  >
+                    Proximo
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -155,90 +185,18 @@
 </template>
 
 <script setup>
-// Dados mockados para demonstração
-const allProperties = ref([
-  {
-    id: 1,
-    title: 'Casa Moderna com Piscina',
-    price: 850000,
-    location: 'Vila Madalena, São Paulo',
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 180,
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=500',
-    type: 'casa',
-    featured: true,
-    createdAt: '2024-01-15'
-  },
-  {
-    id: 2,
-    title: 'Apartamento Luxo Centro',
-    price: 1200000,
-    location: 'Centro, São Paulo',
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 120,
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500',
-    type: 'apartamento',
-    featured: true,
-    createdAt: '2024-01-14'
-  },
-  {
-    id: 3,
-    title: 'Cobertura com Vista Mar',
-    price: 2500000,
-    location: 'Santos, São Paulo',
-    bedrooms: 4,
-    bathrooms: 4,
-    area: 250,
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=500',
-    type: 'cobertura',
-    featured: true,
-    createdAt: '2024-01-13'
-  },
-  {
-    id: 4,
-    title: 'Casa Familiar Jardim',
-    price: 650000,
-    location: 'Jardins, São Paulo',
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 150,
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500',
-    type: 'casa',
-    featured: false,
-    createdAt: '2024-01-12'
-  },
-  {
-    id: 5,
-    title: 'Apartamento Compacto',
-    price: 450000,
-    location: 'Mooca, São Paulo',
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 65,
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
-    type: 'apartamento',
-    featured: false,
-    createdAt: '2024-01-11'
-  },
-  {
-    id: 6,
-    title: 'Terreno Comercial',
-    price: 800000,
-    location: 'Vila Olímpia, São Paulo',
-    bedrooms: 0,
-    bathrooms: 0,
-    area: 300,
-    image: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=500',
-    type: 'terreno',
-    featured: false,
-    createdAt: '2024-01-10'
-  }
-])
+import { storeToRefs } from 'pinia'
+import { usePropertyStore } from '~/stores/properties'
 
-// Filtros
-const filters = ref({
+import { computed, reactive, ref, watch } from 'vue'
+
+const propertyStore = usePropertyStore()
+const { properties } = storeToRefs(propertyStore)
+
+const isLoading = ref(true)
+const loadError = ref('')
+
+const filters = reactive({
   type: '',
   priceRange: '',
   bedrooms: '',
@@ -249,59 +207,103 @@ const sortBy = ref('newest')
 const currentPage = ref(1)
 const itemsPerPage = 6
 
-// Computed properties
+const parsePriceRange = (range) => {
+  if (!range) {
+    return null
+  }
+
+  if (range.endsWith('+')) {
+    return {
+      min: Number(range.replace('+', '')) || 0,
+      max: null
+    }
+  }
+
+  const [min, max] = range.split('-').map((value) => Number(value) || 0)
+
+  return {
+    min,
+    max: max || null
+  }
+}
+
+const loadProperties = async () => {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    await propertyStore.fetchProperties()
+  } catch (error) {
+    console.error('Erro ao carregar propriedades:', error)
+    loadError.value = 'Nao foi possivel carregar as propriedades. Tente novamente.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+await loadProperties()
+
 const filteredProperties = computed(() => {
-  let filtered = [...allProperties.value]
+  let list = properties.value || []
 
-  // Aplicar filtros
-  if (filters.value.type) {
-    filtered = filtered.filter(p => p.type === filters.value.type)
+  if (filters.type) {
+    list = list.filter((property) => property.type === filters.type)
   }
 
-  if (filters.value.priceRange) {
-    const [min, max] = filters.value.priceRange.split('-').map(Number)
-    if (max) {
-      filtered = filtered.filter(p => p.price >= min && p.price <= max)
-    } else {
-      filtered = filtered.filter(p => p.price >= min)
+  if (filters.priceRange) {
+    const range = parsePriceRange(filters.priceRange)
+
+    if (range) {
+      list = list.filter((property) => {
+        if (range.max === null) {
+          return property.price >= range.min
+        }
+        return property.price >= range.min && property.price <= range.max
+      })
     }
   }
 
-  if (filters.value.bedrooms) {
-    const bedrooms = parseInt(filters.value.bedrooms)
-    if (bedrooms === 5) {
-      filtered = filtered.filter(p => p.bedrooms >= 5)
+  if (filters.bedrooms) {
+    if (filters.bedrooms === '5+') {
+      list = list.filter((property) => property.bedrooms >= 5)
     } else {
-      filtered = filtered.filter(p => p.bedrooms === bedrooms)
+      const bedrooms = Number(filters.bedrooms)
+      list = list.filter((property) => property.bedrooms === bedrooms)
     }
   }
 
-  if (filters.value.location) {
-    filtered = filtered.filter(p => 
-      p.location.toLowerCase().includes(filters.value.location.toLowerCase())
-    )
+  if (filters.location) {
+    const term = filters.location.toLowerCase()
+    list = list.filter((property) => property.location?.toLowerCase().includes(term))
   }
 
-  // Aplicar ordenação
+  const sorted = [...list]
+
   switch (sortBy.value) {
     case 'price-asc':
-      filtered.sort((a, b) => a.price - b.price)
+      sorted.sort((a, b) => a.price - b.price)
       break
     case 'price-desc':
-      filtered.sort((a, b) => b.price - a.price)
+      sorted.sort((a, b) => b.price - a.price)
       break
     case 'area-desc':
-      filtered.sort((a, b) => b.area - a.area)
+      sorted.sort((a, b) => (b.area || 0) - (a.area || 0))
       break
     case 'newest':
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    default:
+      sorted.sort(
+        (a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)
+      )
       break
   }
 
-  return filtered
+  return sorted
 })
 
 const totalPages = computed(() => {
+  if (!filteredProperties.value.length) {
+    return 1
+  }
   return Math.ceil(filteredProperties.value.length / itemsPerPage)
 })
 
@@ -315,22 +317,27 @@ const visiblePages = computed(() => {
   const pages = []
   const start = Math.max(1, currentPage.value - 2)
   const end = Math.min(totalPages.value, start + 4)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
+
+  for (let index = start; index <= end; index += 1) {
+    pages.push(index)
   }
-  
+
   return pages
 })
 
-// Methods
+watch(
+  () => ({ ...filters, sortBy: sortBy.value }),
+  () => {
+    currentPage.value = 1
+  },
+  { deep: true }
+)
+
 const clearFilters = () => {
-  filters.value = {
-    type: '',
-    priceRange: '',
-    bedrooms: '',
-    location: ''
-  }
+  filters.type = ''
+  filters.priceRange = ''
+  filters.bedrooms = ''
+  filters.location = ''
   currentPage.value = 1
 }
 
@@ -338,16 +345,18 @@ const applyFilters = () => {
   currentPage.value = 1
 }
 
-// Watch para resetar página quando filtros mudarem
-watch([filters, sortBy], () => {
-  currentPage.value = 1
-})
+const reload = () => {
+  loadProperties()
+}
 
-// SEO
 useHead({
-  title: 'Propriedades - Imobiliária Genérica',
+  title: 'Propriedades - Imobiliaria Generica',
   meta: [
-    { name: 'description', content: 'Encontre casas, apartamentos e terrenos disponíveis. Filtre por preço, localização e características.' }
+    {
+      name: 'description',
+      content:
+        'Encontre casas, apartamentos e terrenos disponiveis. Filtre por preco, localizacao e caracteristicas.'
+    }
   ]
 })
 </script>

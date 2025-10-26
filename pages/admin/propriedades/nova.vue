@@ -17,13 +17,17 @@
     </div>
 
     <form @submit.prevent="saveProperty" class="space-y-8">
-      <!-- Basic Information -->
+      <div v-if="saveError" class="rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+        {{ saveError }}
+      </div>
+
+      <!-- Informacoes Basicas -->
       <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-6">Informações Básicas</h2>
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Informacoes Basicas</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Título *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Titulo *</label>
             <input 
               v-model="property.title" 
               type="text" 
@@ -34,22 +38,24 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Imóvel *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Imovel *</label>
             <select v-model="property.type" required class="input-field">
               <option value="">Selecione o tipo</option>
-              <option value="casa">Casa</option>
-              <option value="apartamento">Apartamento</option>
-              <option value="cobertura">Cobertura</option>
-              <option value="terreno">Terreno</option>
-              <option value="comercial">Comercial</option>
+              <option value="CASA">Casa</option>
+              <option value="APARTAMENTO">Apartamento</option>
+              <option value="COBERTURA">Cobertura</option>
+              <option value="TERRENO">Terreno</option>
+              <option value="COMERCIAL">Comercial</option>
+              <option value="RURAL">Rural</option>
             </select>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Preço *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Preco *</label>
             <input 
               v-model="property.price" 
               type="number" 
+              min="0"
               required
               class="input-field"
               placeholder="850000"
@@ -57,27 +63,28 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Transação *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Transacao *</label>
             <select v-model="property.transaction" required class="input-field">
               <option value="">Selecione</option>
-              <option value="venda">Venda</option>
-              <option value="locacao">Locação</option>
+              <option value="VENDA">Venda</option>
+              <option value="LOCACAO">Locacao</option>
+              <option value="VENDA_LOCACAO">Venda ou Locacao</option>
             </select>
           </div>
           
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Localização *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Localizacao *</label>
             <input 
               v-model="property.location" 
               type="text" 
               required
               class="input-field"
-              placeholder="Ex: Vila Madalena, São Paulo"
+              placeholder="Ex: Vila Madalena, Sao Paulo"
             >
           </div>
           
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Descricao</label>
             <textarea 
               v-model="property.description" 
               rows="4"
@@ -88,7 +95,7 @@
         </div>
       </div>
 
-      <!-- Property Details -->
+      <!-- Detalhes da Propriedade -->
       <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold text-gray-900 mb-6">Detalhes da Propriedade</h2>
         
@@ -114,7 +121,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Área (m²)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Area (m2)</label>
             <input 
               v-model="property.area" 
               type="number" 
@@ -143,7 +150,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Condomínio</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Condominio</label>
             <input 
               v-model="property.condoFee" 
               type="number" 
@@ -155,9 +162,9 @@
         </div>
       </div>
 
-      <!-- Features -->
+      <!-- Caracteristicas -->
       <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-6">Características</h2>
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Caracteristicas</h2>
         
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <label v-for="feature in availableFeatures" :key="feature" class="flex items-center">
@@ -172,7 +179,7 @@
         </div>
       </div>
 
-      <!-- Images -->
+      <!-- Imagens -->
       <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold text-gray-900 mb-6">Imagens</h2>
         
@@ -203,12 +210,10 @@
                 >
                 <button 
                   type="button" 
+                  class="text-sm text-red-600 hover:text-red-800"
                   @click="removeGalleryImage(index)"
-                  class="text-red-600 hover:text-red-800"
                 >
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  Remover
                 </button>
               </div>
             </div>
@@ -231,10 +236,10 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Status da Propriedade</label>
             <select v-model="property.status" class="input-field">
-              <option value="disponivel">Disponível</option>
-              <option value="vendido">Vendido</option>
-              <option value="locado">Locado</option>
-              <option value="rascunho">Rascunho</option>
+              <option value="AVAILABLE">Disponivel</option>
+              <option value="SOLD">Vendido</option>
+              <option value="RENTED">Locado</option>
+              <option value="DRAFT">Rascunho</option>
             </select>
           </div>
           
@@ -257,8 +262,9 @@
         <NuxtLink to="/admin/propriedades" class="btn-secondary">
           Cancelar
         </NuxtLink>
-        <button type="submit" class="btn-primary">
-          Salvar Propriedade
+        <button type="submit" class="btn-primary" :disabled="isSaving">
+          <span v-if="isSaving">Salvando...</span>
+          <span v-else>Salvar Propriedade</span>
         </button>
       </div>
     </form>
@@ -266,9 +272,16 @@
 </template>
 
 <script setup>
+import { usePropertyStore } from '~/stores/properties'
+
 definePageMeta({
   layout: 'admin'
 })
+
+const propertyStore = usePropertyStore()
+
+const isSaving = ref(false)
+const saveError = ref('')
 
 const property = ref({
   title: '',
@@ -286,7 +299,7 @@ const property = ref({
   features: [],
   image: '',
   gallery: [],
-  status: 'disponivel',
+  status: 'AVAILABLE',
   featured: false
 })
 
@@ -295,12 +308,12 @@ const availableFeatures = [
   'Jardim',
   'Garagem',
   'Churrasqueira',
-  'Área de Lazer',
+  'Area de Lazer',
   'Elevador',
   'Portaria 24h',
   'Academia',
   'Playground',
-  'Salão de Festas',
+  'Salao de Festas',
   'Quadra',
   'Sauna',
   'Ar Condicionado',
@@ -309,8 +322,8 @@ const availableFeatures = [
   'Cozinha Planejada',
   'Closet',
   'Varanda',
-  'Terraço',
-  'Sótão'
+  'Terraco',
+  'Sotao'
 ]
 
 const addGalleryImage = () => {
@@ -321,18 +334,77 @@ const removeGalleryImage = (index) => {
   property.value.gallery.splice(index, 1)
 }
 
-const saveProperty = () => {
-  // Validar dados
-  if (!property.value.title || !property.value.type || !property.value.price || !property.value.location) {
-    alert('Por favor, preencha todos os campos obrigatórios.')
+const buildImagesPayload = () => {
+  const images = []
+
+  if (property.value.image) {
+    images.push({
+      url: property.value.image,
+      alt: property.value.title || '',
+      type: 'MAIN',
+      order: 1
+    })
+  }
+
+  property.value.gallery
+    .map((url) => url?.trim())
+    .filter(Boolean)
+    .forEach((url, index) => {
+      images.push({
+        url,
+        alt: property.value.title ? `${property.value.title} - imagem ${index + 1}` : '',
+        type: 'GALLERY',
+        order: index + 2
+      })
+    })
+
+  return images
+}
+
+const saveProperty = async () => {
+  if (!property.value.title || !property.value.type || !property.value.transaction || !property.value.price || !property.value.location) {
+    alert('Por favor, preencha todos os campos obrigatorios.')
     return
   }
 
-  // Simular salvamento
-  console.log('Salvando propriedade:', property.value)
-  alert('Propriedade salva com sucesso!')
-  
-  // Redirecionar para lista
-  navigateTo('/admin/propriedades')
+  if (!property.value.image) {
+    alert('Informe a imagem principal da propriedade.')
+    return
+  }
+
+  isSaving.value = true
+  saveError.value = ''
+
+  try {
+    const payload = {
+      title: property.value.title,
+      type: property.value.type,
+      transaction: property.value.transaction,
+      price: Number(property.value.price),
+      location: property.value.location,
+      description: property.value.description || '',
+      bedrooms: Number(property.value.bedrooms) || 0,
+      bathrooms: Number(property.value.bathrooms) || 0,
+      area: Number(property.value.area) || 0,
+      parking: Number(property.value.parking) || 0,
+      floor: property.value.floor !== '' && property.value.floor !== null ? Number(property.value.floor) : null,
+      condoFee: property.value.condoFee !== '' && property.value.condoFee !== null ? Number(property.value.condoFee) : null,
+      status: property.value.status,
+      featured: Boolean(property.value.featured),
+      features: property.value.features,
+      images: buildImagesPayload()
+    }
+
+    await propertyStore.addProperty(payload)
+
+    alert('Propriedade salva com sucesso!')
+    await navigateTo('/admin/propriedades')
+  } catch (error) {
+    console.error('Erro ao salvar propriedade:', error)
+    saveError.value = 'Nao foi possivel salvar a propriedade. Tente novamente.'
+    alert(saveError.value)
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>

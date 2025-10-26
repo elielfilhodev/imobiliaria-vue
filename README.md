@@ -30,8 +30,26 @@ Um site completo para imobiliária desenvolvido com Nuxt 3 e Vue 3, totalmente r
 - **TypeScript** - Tipagem estática
 - **Headless UI** - Componentes acessíveis
 - **Heroicons** - Ícones SVG
+- **PostgreSQL** - Banco de dados
+- **Prisma** - ORM moderno
+- **Neon** - Banco PostgreSQL na nuvem
 
 ## 📦 Instalação
+
+### Opção 1: Configuração Automática (Recomendada)
+
+**Para Linux/Mac:**
+```bash
+chmod +x setup-neon.sh
+./setup-neon.sh
+```
+
+**Para Windows (PowerShell):**
+```powershell
+.\setup-neon.ps1
+```
+
+### Opção 2: Configuração Manual
 
 1. **Clone o repositório**
 ```bash
@@ -39,12 +57,21 @@ git clone <url-do-repositorio>
 cd imobiliaria-site
 ```
 
-2. **Instale as dependências**
+2. **Configure o banco de dados**
 ```bash
+# Copiar configurações do Neon
+cp env.neon .env
+
+# Instalar dependências
 npm install
+
+# Configurar Prisma
+npm run db:generate
+npm run db:push
+npm run db:seed
 ```
 
-3. **Execute o projeto em modo de desenvolvimento**
+3. **Execute o projeto**
 ```bash
 npm run dev
 ```
@@ -52,6 +79,23 @@ npm run dev
 4. **Acesse o site**
 - Cliente: http://localhost:3000
 - Admin: http://localhost:3000/admin
+- Prisma Studio: `npm run db:studio`
+
+## 🔑 Credenciais de Acesso
+
+**Área Administrativa:**
+- Email: `admin@imobiliaria.com`
+- Senha: `admin123`
+
+## 📊 Dados Iniciais
+
+O sistema cria automaticamente:
+- **3 agentes** com informações completas
+- **5 propriedades** variadas (casas, apartamentos, cobertura)
+- **Características** para cada propriedade
+- **Imagens** organizadas por propriedade
+- **3 contatos** de exemplo
+- **Configurações** do site
 
 ## 🏗️ Estrutura do Projeto
 

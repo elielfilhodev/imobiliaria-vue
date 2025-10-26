@@ -3,6 +3,32 @@ import type { Serialize, Simplify } from "nitropack/types";
 declare module "nitropack/types" {
   type Awaited<T> = T extends PromiseLike<infer U> ? Awaited<U> : T
   interface InternalApi {
+    '/api/admin/reset-database': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/reset-database.post').default>>>>
+    }
+    '/api/admin/setup-basic-data': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/setup-basic-data.post').default>>>>
+    }
+    '/api/contacts/:id/read': {
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/contacts/[id]/read.put').default>>>>
+    }
+    '/api/contacts': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/contacts/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/contacts/index.post').default>>>>
+    }
+    '/api/images': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/images/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/images/index.post').default>>>>
+    }
+    '/api/properties/:id': {
+      'delete': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/properties/[id].delete').default>>>>
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/properties/[id].get').default>>>>
+      'put': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/properties/[id].put').default>>>>
+    }
+    '/api/properties': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/properties/index.get').default>>>>
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/properties/index.post').default>>>>
+    }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/handlers/renderer').default>>>>
     }
